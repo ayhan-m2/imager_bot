@@ -1,0 +1,12 @@
+aiogram==3.13.1
+aiosqlite
+yt-dlp
+opencv-python-headless
+numpy
+pillow
+pdf2docx
+pypdf
+deep-translator
+fpdf2
+aiohttp
+qrcode
