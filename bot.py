@@ -905,9 +905,25 @@ async def process_compress_action(call: CallbackQuery, state: FSMContext):
 # ==========================================
 # اجرای ربات
 # ==========================================
+from aiohttp import web
+
+# تابع پاسخ‌گویی به پینگ‌های سایت UptimeRobot
+async def handle_ping(request):
+    return web.Response(text="🚀 Bot is alive and running!")
+
+# تابع راه‌اندازی وب‌سرور روی پورت 8080 ریپلیت
+async def start_web_server():
+    app = web.Application()
+    app.router.add_get('/', handle_ping)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, '0.0.0.0', 8080)
+    await site.start()
+    logging.info("🌐 Web Server started on port 8080 for UptimeRobot")
 async def main():
     await init_db()
     print("🚀 BOT IS RUNNING WITH ULTIMATE DEFENSIVE MODE ENABLED")
+    await start_web_server()
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
