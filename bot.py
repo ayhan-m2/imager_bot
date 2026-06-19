@@ -27,6 +27,10 @@ from deep_translator import GoogleTranslator
 from fpdf import FPDF
 import contextlib
 
+# کتابخانه‌های اضافه شده برای روشن نگه داشتن سرور (Keep Alive)
+from flask import Flask
+from threading import Thread
+
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, Message, CallbackQuery, FSInputFile, BufferedInputFile
 from aiogram.fsm.context import FSMContext
@@ -39,8 +43,7 @@ logging.basicConfig(level=logging.INFO)
 # ==========================================
 # تنظیمات اصلی
 # ==========================================
-import os
-TOKEN = os.environ.get('BOT_TOKEN')
+TOKEN = '8970846783:AAH1cAG4_rr0WCObXgb1qdatlX8hWMP40x0'  # ⚠️ هشدار: حتماً توکن خود را در ربات فادر تغییر دهید (Revoke کنید)
 ADMIN_ID = 6783618754           # آیدی عددی شما
 CHANNEL_ID = "@ayhan_m2"      
 CHANNEL_URL = "https://t.me/ayhan_m2"
@@ -356,7 +359,7 @@ async def back_handler(call: CallbackQuery, state: FSMContext):
 
     await state.clear()
     await state.update_data(lang=lang)
-    if await check_auth(call.fromuser.id if hasattr(call, 'fromuser') else call.from_user.id, call, lang):
+    if await check_auth(call.from_user.id, call, lang):
         try: await call.message.edit_text(TEXTS[lang]['main_menu'], reply_markup=main_kb(lang, call.from_user.id == ADMIN_ID), parse_mode="HTML")
         except: 
             with contextlib.suppress(Exception): await call.message.delete()
@@ -495,6 +498,7 @@ async def admin_do_broadcast(message: Message, state: FSMContext):
             await message.reply("✅ ارسال شد.")
         except: await message.reply("❌ خطا در ارسال.")
         await state.clear()
+        await state.update_data(lang='fa')
     else:
         wait_msg = await message.reply(f"🚀 شروع ارسال همگانی...\n{progress_bar_maker(0, 100, bar_length=15)}")
         users = await get_all_users()
@@ -517,6 +521,7 @@ async def admin_do_broadcast(message: Message, state: FSMContext):
             
         await wait_msg.edit_text(f"✅ ارسال پایان یافت.\nموفق: {success}\nناموفق (حذف شدند): {total - success}")
         await state.clear()
+        await state.update_data(lang='fa')
 
 # ==========================================
 # سیستم ابزارهای غیر مدیایی
@@ -551,6 +556,7 @@ async def text_gen_img(message: Message, state: FSMContext):
         cap = f"✨ تصویر شما با موفقیت خلق شد.\n\nتوصیف ربات/هوشمند:\n<code>{safe_en_translated}</code>\n\nابعاد نهایی شده خروجی: ({rx_W}x{rx_H})\n@Ayhan_mojarrad"
         await message.answer_photo(FSInputFile(tmp_img_name), caption=cap, parse_mode="HTML", reply_markup=end_dl_kb(lang))
         await state.clear()
+        await state.update_data(lang=lang)
         
     except Exception as xErr:
         logging.error(f"Image creation error: {xErr}")
@@ -650,6 +656,7 @@ async def text_lock_pdf(message: Message, state: FSMContext):
             with contextlib.suppress(Exception): os.unlink(tmp_out_name)
         with contextlib.suppress(Exception): await wait_msg.delete()
         await state.clear()
+        await state.update_data(lang=lang)
 
 # ==========================================
 # سیستم پردازش مدیا و تبدیل فرمت
@@ -778,6 +785,7 @@ async def handle_media(message: Message, state: FSMContext):
                 with contextlib.suppress(Exception): await wait_msg.delete()
                 if 'pdf_path' in locals() and os.path.exists(pdf_path): os.unlink(pdf_path)
                 await state.clear()
+                await state.update_data(lang=lang)
 
     # 5. LOCK DOCUMENT INIT 
     elif current_state == BotStates.LCK_PDF.state:
@@ -858,6 +866,7 @@ async def handle_media(message: Message, state: FSMContext):
             if os.path.exists(tmp_out_name): os.unlink(tmp_out_name)
             with contextlib.suppress(Exception): await wait_msg.delete()
             await state.clear() 
+            await state.update_data(lang=lang)
 
 @dp.callback_query(F.data.startswith("ucomp_"))
 async def process_compress_action(call: CallbackQuery, state: FSMContext):
@@ -903,28 +912,29 @@ async def process_compress_action(call: CallbackQuery, state: FSMContext):
     await state.update_data(lang=lang)
 
 # ==========================================
+# سرور روشن نگهدارنده (Keep Alive Flask)
+# ==========================================
+app = Flask('')
+
+@app.route('/')
+def home():
+    return "Hello. I am alive!"
+
+def run_app():
+    app.run(host='0.0.0.0', port=8080)
+
+def keep_alive():
+    t = Thread(target=run_app)
+    t.start()
+
+# ==========================================
 # اجرای ربات
 # ==========================================
-from aiohttp import web
-
-# تابع پاسخ‌گویی به پینگ‌های سایت UptimeRobot
-async def handle_ping(request):
-    return web.Response(text="🚀 Bot is alive and running!")
-
-# تابع راه‌اندازی وب‌سرور روی پورت 8080 ریپلیت
-async def start_web_server():
-    app = web.Application()
-    app.router.add_get('/', handle_ping)
-    runner = web.AppRunner(app)
-    await runner.setup()
-    site = web.TCPSite(runner, '0.0.0.0', 8080)
-    await site.start()
-    logging.info("🌐 Web Server started on port 8080 for UptimeRobot")
 async def main():
     await init_db()
     print("🚀 BOT IS RUNNING WITH ULTIMATE DEFENSIVE MODE ENABLED")
-    await start_web_server()
     await dp.start_polling(bot)
 
 if __name__ == '__main__':
+    keep_alive()  # اجرای سرور Flask در پس‌زمینه
     asyncio.run(main())
