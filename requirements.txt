@@ -10,3 +10,4 @@ deep-translator
 fpdf2
 aiohttp
 qrcode
+flask
