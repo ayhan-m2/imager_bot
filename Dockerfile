@@ -18,4 +18,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # اجرای ربات (اگر اسم فایل ربات شما چیز دیگری است، کلمه main.py را تغییر دهید)
-CMD ["python", "main.py"]
+CMD ["python", "bot.py"]
